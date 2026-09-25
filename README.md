@@ -15,7 +15,7 @@ The pages live in `public/`. The PHP API lives in `api/`. On the server those AP
 
 ## Setup
 
-The application is hosted on a DigitalOcean droplet with Apache, MySQL, and PHP already installed. A domain name points at that droplet. The `COP4331` database, including the `Users` and `Colors` tables, was created on that server during the lab.
+The application is hosted on a DigitalOcean droplet with Apache, MySQL, and PHP already installed. The domain [acsah.app](https://acsah.app) points at that droplet. The `COP4331` database, including the `Users` and `Colors` tables, was created on that server during the lab.
 
 On the server, the web pages are in `/var/www/html/` and the API is in `/var/www/html/LAMPAPI/`.
 
@@ -25,9 +25,7 @@ Database credentials are not stored in this repository. To connect the API on a 
 
 Apache and MySQL are already running on the droplet. Open the site in a browser:
 
-```text
-http://YOUR_DOMAIN/
-```
+[https://acsah.app](https://acsah.app)
 
 Log in with a username and password that already exists in the `Users` table. A successful login opens `color.html`. Search returns colors whose names contain the text you typed. Add Color stores a new name for the logged-in user. Log Out returns to the login page.
 
