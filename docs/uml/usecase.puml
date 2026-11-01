@@ -1,0 +1,40 @@
+@startuml usecase
+' Use case diagram for the COLORS web application (COP 4331 LAMP lab).
+' Based on public/js/code.js and the PHP files in api/.
+left to right direction
+skinparam packageStyle rectangle
+skinparam shadowing false
+
+actor "User" as User
+actor "MySQL Database\n(COP4331)" as DB <<system>>
+
+rectangle "COLORS Web Application" {
+  usecase "Log In" as UC_Login
+  usecase "Search Colors" as UC_Search
+  usecase "Add Color" as UC_Add
+  usecase "Log Out" as UC_Logout
+  usecase "Check Login Cookie" as UC_Cookie
+}
+
+User --> UC_Login
+User --> UC_Search
+User --> UC_Add
+User --> UC_Logout
+
+UC_Search ..> UC_Cookie : <<include>>
+UC_Add ..> UC_Cookie : <<include>>
+
+UC_Login --> DB
+UC_Search --> DB
+UC_Add --> DB
+
+legend bottom
+  | Use case | Implementation |
+  | Log In | index.html, doLogin() -> POST /LAMPAPI/Login.php. Matches Login and Password in Users. On success a cookie (firstName, lastName, userId) is saved for 20 minutes. |
+  | Search Colors | color.html, searchColor() -> POST /LAMPAPI/SearchColors.php. Returns Colors whose Name contains the text, only for the logged-in userId. |
+  | Add Color | color.html, addColor() -> POST /LAMPAPI/AddColor.php. Inserts (UserId, Name) into Colors. |
+  | Log Out | doLogout() expires the cookie and returns to index.html. No API or database call. |
+  | Check Login Cookie | readCookie() runs when color.html loads. Without a userId in the cookie the user is sent back to index.html. |
+  Not in this system: registration, editing or deleting colors. Users are added to MySQL directly.
+endlegend
+@enduml
