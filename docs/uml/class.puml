@@ -1,0 +1,161 @@
+@startuml class
+' Class diagram for the COLORS web application.
+' The code is procedural (plain JavaScript functions and PHP scripts),
+' so each file is shown as a class with a stereotype.
+' Attributes are the file's variables, operations are its functions.
+skinparam shadowing false
+skinparam classAttributeIconSize 0
+hide empty members
+
+package "public (browser)" {
+  class "index.html" as IndexPage <<page>> {
+    loginName : text input
+    loginPassword : password input
+    loginButton : button
+    loginResult : span
+  }
+
+  class "color.html" as ColorPage <<page>> {
+    userName : span
+    logoutButton : button
+    searchText : text input
+    searchColorButton : button
+    colorSearchResult : span
+    colorList : p
+    colorText : text input
+    addColorButton : button
+    colorAddResult : span
+  }
+
+  class "code.js" as CodeJS <<script>> {
+    {static} urlBase : string = "/LAMPAPI"
+    {static} extension : string = "php"
+    userId : int = 0
+    firstName : string = ""
+    lastName : string = ""
+    --
+    doLogin() : void
+    saveCookie() : void
+    readCookie() : void
+    doLogout() : void
+    addColor() : void
+    searchColor() : void
+  }
+
+  class "md5.js" as MD5 <<library>> {
+    md5(string, key, raw) : string
+  }
+
+  class "styles.css" as CSS <<stylesheet>>
+}
+
+package "api (served at /LAMPAPI)" {
+  class "Login.php" as LoginPHP <<endpoint>> {
+    getRequestInfo() : array
+    sendResultInfoAsJson(obj) : void
+    returnWithError(err) : void
+    returnWithInfo(firstName, lastName, id) : void
+  }
+
+  class "SearchColors.php" as SearchPHP <<endpoint>> {
+    getRequestInfo() : array
+    sendResultInfoAsJson(obj) : void
+    returnWithError(err) : void
+    returnWithInfo(searchResults) : void
+  }
+
+  class "AddColor.php" as AddPHP <<endpoint>> {
+    getRequestInfo() : array
+    sendResultInfoAsJson(obj) : void
+    returnWithError(err) : void
+  }
+
+  class "db-config.php" as DbConfig <<config>> {
+    $dbHost : string
+    $dbUser : string
+    $dbPass : string
+    $dbName : string = "COP4331"
+  }
+}
+
+package "MySQL database COP4331" {
+  class Users <<table>> {
+    ID : int
+    firstName : varchar
+    lastName : varchar
+    Login : varchar
+    Password : varchar
+  }
+
+  class Colors <<table>> {
+    UserId : int
+    Name : varchar
+  }
+}
+
+package "JSON messages" {
+  class LoginRequest <<JSON>> {
+    login : string
+    password : string
+  }
+  class LoginResponse <<JSON>> {
+    id : int
+    firstName : string
+    lastName : string
+    error : string
+  }
+  class SearchRequest <<JSON>> {
+    search : string
+    userId : int
+  }
+  class SearchResponse <<JSON>> {
+    results : string[]
+    error : string
+  }
+  class AddColorRequest <<JSON>> {
+    color : string
+    userId : int
+  }
+  class ErrorResponse <<JSON>> {
+    error : string
+  }
+}
+
+IndexPage ..> CodeJS : <<loads>>
+IndexPage ..> MD5 : <<loads>>
+IndexPage ..> CSS : <<loads>>
+ColorPage ..> CodeJS : <<loads>>
+ColorPage ..> CSS : <<loads>>
+
+CodeJS ..> LoginPHP : POST (doLogin)
+CodeJS ..> SearchPHP : POST (searchColor)
+CodeJS ..> AddPHP : POST (addColor)
+
+LoginPHP ..> DbConfig : <<require_once>>
+SearchPHP ..> DbConfig : <<require_once>>
+AddPHP ..> DbConfig : <<require_once>>
+
+LoginPHP ..> Users : SELECT
+SearchPHP ..> Colors : SELECT ... LIKE
+AddPHP ..> Colors : INSERT
+
+Users "1" -- "0..*" Colors : owns >
+
+LoginPHP ..> LoginRequest : reads
+LoginPHP ..> LoginResponse : returns
+SearchPHP ..> SearchRequest : reads
+SearchPHP ..> SearchResponse : returns
+AddPHP ..> AddColorRequest : reads
+AddPHP ..> ErrorResponse : returns
+
+note bottom of MD5
+  Loaded by index.html, but the md5() call in
+  doLogin() is commented out, so the password
+  is sent and compared as plain text.
+end note
+
+note bottom of Colors
+  Colors.UserId holds Users.ID.
+  Only the columns the API uses are shown.
+end note
+@enduml
