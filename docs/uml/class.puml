@@ -145,8 +145,15 @@ LoginPHP ..> LoginRequest : reads
 LoginPHP ..> LoginResponse : returns
 SearchPHP ..> SearchRequest : reads
 SearchPHP ..> SearchResponse : returns
+SearchPHP ..> LoginResponse : returns on\nno match or error
 AddPHP ..> AddColorRequest : reads
 AddPHP ..> ErrorResponse : returns
+
+note as Legend
+  The code has no real classes. Each file is shown
+  as a class with a stereotype: attributes are its
+  variables or fields, operations are its functions.
+end note
 
 note bottom of MD5
   Loaded by index.html, but the md5() call in
@@ -155,7 +162,8 @@ note bottom of MD5
 end note
 
 note bottom of Colors
-  Colors.UserId holds Users.ID.
+  Colors.UserId holds Users.ID
+  (not declared in the repo; inferred from the queries).
   Only the columns the API uses are shown.
 end note
 @enduml

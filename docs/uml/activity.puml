@@ -2,47 +2,43 @@
 ' Activity diagram for the COLORS web application.
 ' Follows the control flow in public/js/code.js and api/*.php.
 skinparam shadowing false
-skinparam ActivityBackgroundColor #FDFDFD
 
 title COLORS: log in, search or add colors, log out
 
 |User|
 start
 :Open index.html;
-:Enter username and password;
-:Click "Do It";
-
-|Browser (code.js)|
-:doLogin(): build JSON {login, password};
-:POST /LAMPAPI/Login.php;
-
-|PHP API|
-if (db-config.php readable?) then (no)
-  :Return {id:0, error:"Database is not configured"};
-elseif (MySQL connection OK?) then (no)
-  :Return {id:0, error:<connect error>};
-else (yes)
-  |MySQL|
-  :SELECT ID, firstName, lastName FROM Users
-  WHERE Login=? AND Password=?;
+repeat
+  |User|
+  :Enter username and password;
+  :Click "Do It";
+  |Browser (code.js)|
+  :doLogin(): build JSON with login and password
+  (md5 hashing is commented out);
+  :POST /LAMPAPI/Login.php;
   |PHP API|
-  if (row found?) then (yes)
-    :Return {id, firstName, lastName, error:""};
-  else (no)
-    :Return {id:0, error:"No Records Found"};
+  if (db-config.php readable?) then (no)
+    :Return id 0, error "Database is not configured";
+  elseif (MySQL connection OK?) then (no)
+    :Return id 0, error = connect error;
+  else (yes)
+    |MySQL|
+    :SELECT ID, firstName, lastName FROM Users
+    WHERE Login=? AND Password=?;
+    |PHP API|
+    if (row found?) then (yes)
+      :Return id, firstName, lastName, error "";
+    else (no)
+      :Return id 0, error "No Records Found";
+    endif
   endif
-endif
+  |Browser (code.js)|
+  backward:Show "User/Password combination incorrect";
+repeat while (id < 1?) is (yes) not (no)
 
-|Browser (code.js)|
-if (id < 1?) then (yes)
-  :Show "User/Password combination incorrect";
-  stop
-else (no)
-  :saveCookie(): firstName, lastName, userId
-  (expires in 20 minutes);
-  :Redirect to color.html;
-endif
-
+:saveCookie(): firstName, lastName, userId
+(expires in 20 minutes);
+:Redirect to color.html;
 :color.html loads, readCookie();
 if (userId found in cookie?) then (no)
   :Redirect to index.html;
@@ -58,21 +54,22 @@ repeat
     :Type search text, click "Search Color";
     |Browser (code.js)|
     :searchColor(): POST /LAMPAPI/SearchColors.php
-    {search, userId};
+    with search and userId;
     |PHP API|
+    :Read JSON body, connect with db-config.php;
     |MySQL|
     :SELECT Name FROM Colors
     WHERE Name LIKE %search% AND UserID=?;
     |PHP API|
     if (any matches?) then (yes)
-      :Return {results:[names], error:""};
+      :Return results = [names], error "";
       |Browser (code.js)|
       :Show "Color(s) has been retrieved"
       and list the names in the colorList paragraph;
     else (no)
       |PHP API|
-      :Return JSON with error "No Records Found"
-      and no results field;
+      :Return id 0, error "No Records Found"
+      (no results field);
       |Browser (code.js)|
       :Show "Color(s) has been retrieved";
       note right
@@ -85,14 +82,19 @@ repeat
     :Type color name, click "Add Color";
     |Browser (code.js)|
     :addColor(): POST /LAMPAPI/AddColor.php
-    {color, userId};
+    with color and userId;
     |PHP API|
+    :Read JSON body, connect with db-config.php;
     |MySQL|
     :INSERT INTO Colors (UserId, Name) VALUES (?, ?);
     |PHP API|
-    :Return {error:""};
+    :Return error "";
     |Browser (code.js)|
     :Show "Color has been added";
+    note right
+      The response body is not read. The message
+      appears on any HTTP 200 reply.
+    end note
   case (Log Out)
     |User|
     :Click "Log Out";
@@ -103,7 +105,7 @@ repeat
     stop
   endswitch
   |User|
-repeat while (Keep using the page?) is (yes)
--> no;
+repeat while (Keep using the page?) is (yes) not (no)
+:Close the page;
 stop
 @enduml

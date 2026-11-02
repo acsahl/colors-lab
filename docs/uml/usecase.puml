@@ -13,28 +13,27 @@ rectangle "COLORS Web Application" {
   usecase "Search Colors" as UC_Search
   usecase "Add Color" as UC_Add
   usecase "Log Out" as UC_Logout
-  usecase "Check Login Cookie" as UC_Cookie
 }
 
-User --> UC_Login
-User --> UC_Search
-User --> UC_Add
-User --> UC_Logout
+' Primary actor
+User -- UC_Login
+User -- UC_Search
+User -- UC_Add
+User -- UC_Logout
 
-UC_Search ..> UC_Cookie : <<include>>
-UC_Add ..> UC_Cookie : <<include>>
-
-UC_Login --> DB
-UC_Search --> DB
-UC_Add --> DB
+' Secondary actor: only the use cases that call a PHP endpoint touch MySQL
+UC_Login -- DB
+UC_Search -- DB
+UC_Add -- DB
 
 legend bottom
   | Use case | Implementation |
-  | Log In | index.html, doLogin() -> POST /LAMPAPI/Login.php. Matches Login and Password in Users. On success a cookie (firstName, lastName, userId) is saved for 20 minutes. |
+  | Log In | index.html, doLogin() -> POST /LAMPAPI/Login.php. Matches Login and Password in Users. On success a cookie (firstName, lastName, userId) is saved for 20 minutes and color.html opens. |
   | Search Colors | color.html, searchColor() -> POST /LAMPAPI/SearchColors.php. Returns Colors whose Name contains the text, only for the logged-in userId. |
   | Add Color | color.html, addColor() -> POST /LAMPAPI/AddColor.php. Inserts (UserId, Name) into Colors. |
   | Log Out | doLogout() expires the cookie and returns to index.html. No API or database call. |
-  | Check Login Cookie | readCookie() runs when color.html loads. Without a userId in the cookie the user is sent back to index.html. |
+  Precondition for Search Colors, Add Color and Log Out: the user is logged in. readCookie() runs once when
+  color.html loads and sends the user back to index.html if the cookie has no userId.
   Not in this system: registration, editing or deleting colors. Users are added to MySQL directly.
 endlegend
 @enduml
