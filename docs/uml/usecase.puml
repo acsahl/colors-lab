@@ -1,39 +1,26 @@
 @startuml usecase
-' Use case diagram for the COLORS web application (COP 4331 LAMP lab).
-' Based on public/js/code.js and the PHP files in api/.
+' Use case diagram for the COLORS web application.
 left to right direction
-skinparam packageStyle rectangle
 skinparam shadowing false
 
-actor "User" as User
-actor "MySQL Database\n(COP4331)" as DB <<system>>
+actor User
+actor "MySQL Database" as DB <<system>>
 
 rectangle "COLORS Web Application" {
-  usecase "Log In" as UC_Login
-  usecase "Search Colors" as UC_Search
-  usecase "Add Color" as UC_Add
-  usecase "Log Out" as UC_Logout
+  usecase "Log In" as Login
+  usecase "Search Colors" as Search
+  usecase "Add Color" as Add
+  usecase "Log Out" as Logout
 }
 
-' Primary actor
-User -- UC_Login
-User -- UC_Search
-User -- UC_Add
-User -- UC_Logout
+User -- Login
+User -- Search
+User -- Add
+User -- Logout
 
-' Secondary actor: only the use cases that call a PHP endpoint touch MySQL
-UC_Login -- DB
-UC_Search -- DB
-UC_Add -- DB
+Login -- DB
+Search -- DB
+Add -- DB
 
-legend bottom
-  | Use case | Implementation |
-  | Log In | index.html, doLogin() -> POST /LAMPAPI/Login.php. Matches Login and Password in Users. On success a cookie (firstName, lastName, userId) is saved for 20 minutes and color.html opens. |
-  | Search Colors | color.html, searchColor() -> POST /LAMPAPI/SearchColors.php. Returns Colors whose Name contains the text, only for the logged-in userId. |
-  | Add Color | color.html, addColor() -> POST /LAMPAPI/AddColor.php. Inserts (UserId, Name) into Colors. |
-  | Log Out | doLogout() expires the cookie and returns to index.html. No API or database call. |
-  Precondition for Search Colors, Add Color and Log Out: the user is logged in. readCookie() runs once when
-  color.html loads and sends the user back to index.html if the cookie has no userId.
-  Not in this system: registration, editing or deleting colors. Users are added to MySQL directly.
-endlegend
+note "Search Colors, Add Color and Log Out\nrequire the user to be logged in.\nThere is no registration, edit or delete." as N1
 @enduml

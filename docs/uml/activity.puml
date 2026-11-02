@@ -1,111 +1,42 @@
 @startuml activity
 ' Activity diagram for the COLORS web application.
-' Follows the control flow in public/js/code.js and api/*.php.
 skinparam shadowing false
-
-title COLORS: log in, search or add colors, log out
 
 |User|
 start
-:Open index.html;
+:Open login page;
 repeat
-  |User|
   :Enter username and password;
-  :Click "Do It";
-  |Browser (code.js)|
-  :doLogin(): build JSON with login and password
-  (md5 hashing is commented out);
-  :POST /LAMPAPI/Login.php;
-  |PHP API|
-  if (db-config.php readable?) then (no)
-    :Return id 0, error "Database is not configured";
-  elseif (MySQL connection OK?) then (no)
-    :Return id 0, error = connect error;
-  else (yes)
-    |MySQL|
-    :SELECT ID, firstName, lastName FROM Users
-    WHERE Login=? AND Password=?;
-    |PHP API|
-    if (row found?) then (yes)
-      :Return id, firstName, lastName, error "";
-    else (no)
-      :Return id 0, error "No Records Found";
-    endif
-  endif
-  |Browser (code.js)|
+  |System|
+  :Check credentials in Users table;
   backward:Show "User/Password combination incorrect";
-repeat while (id < 1?) is (yes) not (no)
-
-:saveCookie(): firstName, lastName, userId
-(expires in 20 minutes);
-:Redirect to color.html;
-:color.html loads, readCookie();
-if (userId found in cookie?) then (no)
-  :Redirect to index.html;
-  stop
-else (yes)
-endif
+repeat while (Valid?) is (no) not (yes)
+:Save login cookie;
+:Show color page;
 
 repeat
   |User|
-  :Choose an action;
-  switch (Action?)
-  case (Search Color)
-    :Type search text, click "Search Color";
-    |Browser (code.js)|
-    :searchColor(): POST /LAMPAPI/SearchColors.php
-    with search and userId;
-    |PHP API|
-    :Read JSON body, connect with db-config.php;
-    |MySQL|
-    :SELECT Name FROM Colors
-    WHERE Name LIKE %search% AND UserID=?;
-    |PHP API|
-    if (any matches?) then (yes)
-      :Return results = [names], error "";
-      |Browser (code.js)|
-      :Show "Color(s) has been retrieved"
-      and list the names in the colorList paragraph;
-    else (no)
-      |PHP API|
-      :Return id 0, error "No Records Found"
-      (no results field);
-      |Browser (code.js)|
-      :Show "Color(s) has been retrieved";
-      note right
-        jsonObject.results is undefined here,
-        so the list is not updated.
-      end note
-    endif
-  case (Add Color)
+  switch (Choose action)
+  case (Search)
+    :Enter search text;
+    |System|
+    :Find user's colors that match;
+    :Show matching colors;
+  case (Add)
     |User|
-    :Type color name, click "Add Color";
-    |Browser (code.js)|
-    :addColor(): POST /LAMPAPI/AddColor.php
-    with color and userId;
-    |PHP API|
-    :Read JSON body, connect with db-config.php;
-    |MySQL|
-    :INSERT INTO Colors (UserId, Name) VALUES (?, ?);
-    |PHP API|
-    :Return error "";
-    |Browser (code.js)|
+    :Enter color name;
+    |System|
+    :Save color for this user;
     :Show "Color has been added";
-    note right
-      The response body is not read. The message
-      appears on any HTTP 200 reply.
-    end note
   case (Log Out)
     |User|
     :Click "Log Out";
-    |Browser (code.js)|
-    :doLogout(): clear userId and names,
-    expire the cookie;
-    :Redirect to index.html;
+    |System|
+    :Clear cookie;
+    :Return to login page;
     stop
   endswitch
   |User|
-repeat while (Keep using the page?) is (yes) not (no)
-:Close the page;
+repeat while (Continue?) is (yes) not (no)
 stop
 @enduml
