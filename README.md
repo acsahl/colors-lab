@@ -41,3 +41,25 @@ Log in with a username and password that already exists in the `Users` table. A 
 ## AI usage
 
 The application behavior comes from the existing COP 4331 COLORS lab code. Cursor was used to organize that code into this repository layout, move the database password out of the PHP files into `api/db-config.php`, and draft this README and the MIT license.
+
+## Continuous Integration
+
+Every push and pull request runs the **Lint** workflow in GitHub Actions
+(`.github/workflows/lint.yml`). Node.js is used only to install and run the
+linters; the app itself still runs on the LAMP stack.
+
+| Files | Linter | Config |
+| --- | --- | --- |
+| `public/**/*.html` | HTMLHint | `.htmlhintrc` |
+| `public/**/*.css` | Stylelint (`stylelint-config-standard`) | `.stylelintrc.json` |
+| `public/js/**/*.js` | ESLint (`@eslint/js` recommended) | `eslint.config.js` |
+
+`public/js/md5.js` is a third-party library (blueimp JavaScript-MD5) and is
+left out of ESLint.
+
+To run the same checks locally:
+
+```bash
+npm install
+npm run lint
+```
