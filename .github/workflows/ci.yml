@@ -1,0 +1,105 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  lint:
+    name: Lint HTML, CSS, and JavaScript
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js (lint and test tools only)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install tools
+        run: npm install --no-package-lock --no-audit --no-fund
+
+      - name: Lint HTML (HTMLHint)
+        run: npm run lint:html
+
+      - name: Lint CSS (Stylelint)
+        run: npm run lint:css
+
+      - name: Lint JavaScript (ESLint)
+        run: npm run lint:js
+
+  test:
+    name: Unit and integration tests (Jest)
+    runs-on: ubuntu-latest
+    needs: lint
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: COP4331
+          MYSQL_USER: colors_ci
+          MYSQL_PASSWORD: ci-test-password
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up PHP (runs the app's API)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.3"
+          extensions: mysqli, mysqlnd
+          tools: none
+
+      - name: Set up Node.js (lint and test tools only)
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install tools
+        run: npm install --no-package-lock --no-audit --no-fund
+
+      - name: Run front-end unit tests
+        run: npm run test:unit
+
+      - name: Load test database
+        run: mysql -h 127.0.0.1 -P 3306 -u colors_ci -pci-test-password COP4331 < tests/sql/schema.sql
+
+      - name: Write CI database config for the API
+        run: |
+          cat > api/db-config.php <<'PHP'
+          <?php
+          $dbHost = "127.0.0.1";
+          $dbUser = "colors_ci";
+          $dbPass = "ci-test-password";
+          $dbName = "COP4331";
+          PHP
+
+      - name: Start PHP built-in server
+        run: |
+          php -S 127.0.0.1:8000 -t api > php-server.log 2>&1 &
+          for i in $(seq 1 20); do
+            curl -s -o /dev/null http://127.0.0.1:8000/Login.php && exit 0
+            sleep 1
+          done
+          echo "PHP server did not start"; cat php-server.log; exit 1
+
+      - name: Run API integration tests
+        run: npm run test:integration
+        env:
+          API_BASE_URL: http://127.0.0.1:8000
+
+      - name: Show PHP server log
+        if: always()
+        run: cat php-server.log || true
