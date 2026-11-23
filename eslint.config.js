@@ -22,5 +22,23 @@ module.exports = [
       "prefer-const": "error",
       "semi": "error"
     }
+  },
+  {
+    files: ["tests/**/*.js", "jest.config.js", "eslint.config.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "commonjs",
+      globals: {
+        ...globals.node,
+        ...globals.jest,
+        ...globals.browser
+      }
+    },
+    rules: {
+      "eqeqeq": "error",
+      "no-var": "error",
+      "prefer-const": "error",
+      "semi": "error"
+    }
   }
 ];

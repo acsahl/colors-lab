@@ -44,22 +44,43 @@ The application behavior comes from the existing COP 4331 COLORS lab code. Curso
 
 ## Continuous Integration
 
-Every push and pull request runs the **Lint** workflow in GitHub Actions
-(`.github/workflows/lint.yml`). Node.js is used only to install and run the
-linters; the app itself still runs on the LAMP stack.
+Every push and pull request runs the **CI** workflow in GitHub Actions
+(`.github/workflows/ci.yml`). Node.js is used only to install and run the
+lint and test tools; the app itself still runs on the LAMP stack.
 
-| Files | Linter | Config |
-| --- | --- | --- |
-| `public/**/*.html` | HTMLHint | `.htmlhintrc` |
-| `public/**/*.css` | Stylelint (`stylelint-config-standard`) | `.stylelintrc.json` |
-| `public/js/**/*.js` | ESLint (`@eslint/js` recommended) | `eslint.config.js` |
+The workflow has two jobs:
 
-`public/js/md5.js` is a third-party library (blueimp JavaScript-MD5) and is
-left out of ESLint.
+1. **Lint** checks the front end:
+
+   | Files | Linter | Config |
+   | --- | --- | --- |
+   | `public/**/*.html` | HTMLHint | `.htmlhintrc` |
+   | `public/**/*.css` | Stylelint (`stylelint-config-standard`) | `.stylelintrc.json` |
+   | `public/js/**/*.js`, `tests/**/*.js` | ESLint (`@eslint/js` recommended) | `eslint.config.js` |
+
+   `public/js/md5.js` is a third-party library (blueimp JavaScript-MD5) and is
+   left out of ESLint.
+
+2. **Tests** run with Jest (`jest.config.js`):
+
+   - **Unit tests** (`tests/unit/`) load `public/js/code.js` in a jsdom
+     browser environment with a fake `XMLHttpRequest`. They check the JSON
+     the login, add-color and search forms send, how search results are
+     formatted on the page, and how the login cookie is read.
+   - **Integration tests** (`tests/integration/`) make real HTTP requests to
+     the PHP endpoints. The workflow starts a MySQL 8 service, loads
+     `tests/sql/schema.sql`, writes a CI-only `api/db-config.php`, and serves
+     `api/` with PHP's built-in server. The tests check the status code,
+     content type and JSON structure returned by `Login.php`,
+     `SearchColors.php` and `AddColor.php`.
 
 To run the same checks locally:
 
 ```bash
 npm install
 npm run lint
+npm run test:unit
+# Integration tests need the API running against a database loaded with
+# tests/sql/schema.sql, e.g. `php -S 127.0.0.1:8000 -t api`:
+npm run test:integration
 ```
